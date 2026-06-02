@@ -1,0 +1,56 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Initialize Web Project Environment
+      run: |
+        npm init -y
+        npm install react react-dom
+        npm install -D vite @vitejs/plugin-react
+        mkdir -p src dist public
+        mv App.jsx src/App.jsx
+        echo 'import React from "react"; import ReactDOM from "react-dom/client"; import App from "./App.jsx"; ReactDOM.createRoot(document.getElementById("root")).render(<App />);' > src/main.jsx
+        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><title>MoneyFlow</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>' > index.html
+        echo 'import { defineConfig } from "vite"; import react from "@vitejs/plugin-react"; export default defineConfig({ plugins: [react()] });' > vite.config.js
+        npx vite build
+
+    - name: Add and Sync Capacitor Android Wrapper
+      run: |
+        npm install @capacitor/core @capacitor/cli @capacitor/android
+        npx cap init MoneyFlow com.moneyflow.app --web-dir=dist
+        npx cap add android
+        npx cap sync android
+
+    - name: Set up Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Build Android APK with Gradle
+      run: |
+        cd android
+        chmod +x gradlew
+        ./gradlew assembleDebug
+
+    - name: Upload Finished APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: MoneyFlow-Android-APK
+        path: android/app/build/outputs/apk/debug/app-debug.apk
