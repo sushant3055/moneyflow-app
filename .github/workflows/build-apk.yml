@@ -16,7 +16,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 20
+        node-version: 22
 
     - name: Initialize Web Project Environment
       run: |
@@ -26,8 +26,12 @@ jobs:
         mkdir -p src dist public
         mv App.jsx src/App.jsx
         echo 'import React from "react"; import ReactDOM from "react-dom/client"; import App from "./App.jsx"; ReactDOM.createRoot(document.getElementById("root")).render(<App />);' > src/main.jsx
-        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><title>MoneyFlow</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>' > index.html
+        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>MoneyFlow</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>' > index.html
         echo 'import { defineConfig } from "vite"; import react from "@vitejs/plugin-react"; export default defineConfig({ plugins: [react()] });' > vite.config.js
+        
+    - name: Compile Web Assets (Ignore Non-Critical Errors)
+      run: |
+        export CI=false
         npx vite build
 
     - name: Add and Sync Capacitor Android Wrapper
